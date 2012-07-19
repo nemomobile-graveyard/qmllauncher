@@ -33,6 +33,7 @@
 #include <QDeclarativeView>
 #include <QDeclarativeEngine>
 #include <QDebug>
+#include <QDir>
 #ifdef HAS_BOOSTER
 #include <applauncherd/MDeclarativeCache>
 #endif
@@ -55,12 +56,54 @@ int main(int argc, char **argv)
     view = &stackView;
 #endif
 
+    QString path;
+    QString urlstring;
+    bool isFullscreen = false;
+    QStringList arguments = application->arguments();
+    for (int i = 0; i < arguments.count(); ++i) {
+        QString parameter = arguments.at(i);
+        if (parameter == "-path") {
+            if (i + 1 >= arguments.count())
+                qFatal("-path requires an argument");
+            path = arguments.at(i + 1);
+            i++;
+        } else if (parameter == "-url") {
+            if (i + 1 >= arguments.count())
+                qFatal("-path requires an argument");
+            urlstring = arguments.at(i + 1);
+            i++;
+        } else if (parameter == "-fullscreen") {
+            isFullscreen = true;
+        } else if (parameter == "-help") {
+            qDebug() << "Fast QML-only application launcher";
+            qDebug() << "-fullscreen   - show QML fullscreen";
+            qDebug() << "-path         - path to cd to before launching -url";
+            qDebug() << "-url          - file to launch (default: main.qml inside -path)";
+            exit(0);
+        }
+    }
+
+    if (!path.isEmpty())
+        QDir::setCurrent(path);
+
+    QUrl url;
+    if (urlstring.isEmpty())
+        url = QUrl::fromLocalFile("main.qml");
+    else
+        url = QUrl::fromUserInput(urlstring);
+        
+
     QObject::connect(view->engine(), SIGNAL(quit()), application, SLOT(quit()));
-    view->setSource(QUrl::fromLocalFile("main.qml"));
+    view->setSource(url);
     view->setAttribute(Qt::WA_OpaquePaintEvent);
     view->setAttribute(Qt::WA_NoSystemBackground);
     view->viewport()->setAttribute(Qt::WA_OpaquePaintEvent);
     view->viewport()->setAttribute(Qt::WA_NoSystemBackground);
-    view->showFullScreen();
+
+    if (isFullscreen)
+        view->showFullScreen();
+    else
+        view->show();
+
     return application->exec();
 }
