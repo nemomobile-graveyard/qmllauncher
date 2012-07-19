@@ -49,8 +49,10 @@ int main(int argc, char **argv)
     view = MDeclarativeCache::qDeclarativeView();
 #else
     qWarning() << Q_FUNC_INFO << "Warning! Running without booster. This may be a bit slower.";
-    application = new QApplication(argc, argv);
-    view = new QDeclarativeView;
+    QApplication stackApp(argc, argv);
+    QDeclarativeView stackView;
+    application = &stackApp;
+    view = &stackView;
 #endif
 
     QObject::connect(view->engine(), SIGNAL(quit()), application, SLOT(quit()));
